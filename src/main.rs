@@ -100,11 +100,26 @@ impl BasicApp {
         }
     }
     fn refresh(&self) {
-        let s = format!("git -C \"{}\" log --pretty=oneline -10", self.prj_folder.text());
+        // let mut s = format!("git -C '{}' log --pretty=oneline -10", self.prj_folder.text());
+        let mut s = format!("-C \"{}\"", self.prj_folder.text());
+        s = s.to_string().replace("\\", "\\\\");
         println!("{}", s);
-        let output = Command::new(s).output().unwrap();
+        let output = Command::new("git").current_dir(self.prj_folder.text()).arg("log").arg("--pretty=oneline").arg("-10").output().unwrap();
         let out = String::from_utf8(output.stdout).unwrap();
         println!("{}", out);
+        // let mut lines = out.split("/n").collect();
+        let mut collect :Vec<String>= Vec::new();
+        let mut collect2 :Vec<String>= Vec::new();
+        let lines = out.lines();
+        for line in lines {
+            let mut format = format!("{},{}", &line[..6], &line[41..]);
+            let mut format2 = format!("{},{}", &line[..6], &line[41..]);
+            collect.push(format);
+            collect2.push(format2);
+        }
+        self.new_id.set_collection(collect);
+        self.old_id.set_collection(collect2);
+        
         // String cmd = "git -C \"" + bPath.getAbsolutePath() + "\" log --pretty=oneline -10";
         // System.out.println(cmd);
         // List<String> lines = Utils.getExeCmdOutPut(cmd);
