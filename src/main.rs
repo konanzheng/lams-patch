@@ -25,7 +25,10 @@ use std::path::*;
 
 #[derive(Default, NwgUi)]
 pub struct BasicApp {
-    #[nwg_control(size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE")]
+    #[nwg_resource(source_file: Some("./patch.ico"))]
+    icon: nwg::Icon,
+
+    #[nwg_control(icon: Some(&data.icon),size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE")]
     #[nwg_events( OnWindowClose: [BasicApp::say_goodbye] )]
     window: nwg::Window,
 
