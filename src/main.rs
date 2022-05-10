@@ -28,8 +28,8 @@ pub struct BasicApp {
     #[nwg_resource(source_file: Some("./patch.ico"))]
     icon: nwg::Icon,
 
-    #[nwg_control(icon: Some(&data.icon),size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE")]
-    #[nwg_events( OnWindowClose: [BasicApp::say_goodbye] )]
+    #[nwg_control(icon: Some(&data.icon),size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE", accept_files: true)]
+    #[nwg_events( OnWindowClose: [BasicApp::say_goodbye] , OnFileDrop: [BasicApp::load_text(SELF, EVT_DATA)])]
     window: nwg::Window,
 
     #[nwg_resource(family: "Microsoft YaHei UI Bold", size: 20, weight: 500)]
@@ -80,11 +80,28 @@ pub struct BasicApp {
     #[nwg_resource(title: "选择目录", action: nwg::FileDialogAction::OpenDirectory,multiselect:false )]
     dialog: nwg::FileDialog,
 }
-#[warn(unused_must_use)]
+
 impl BasicApp {
-    // fn say_hello(&self) {
-    //     nwg::simple_message("Hello", &format!("Hello {}", self.name_edit.text()));
-    // }
+    pub fn load_text(&self, data: &nwg::EventData) {
+        let drop = data.on_file_drop();
+        let files =  drop.files();
+        if files.len() == 1{
+            // 判断当前焦点在谁上就设置谁的text内容
+            let  text = &files[0];
+            println!("{:?}", text);
+            let file_path = Path::new(&text);
+            if file_path.join("target").as_path().is_dir() {
+                // 有target目录 的是项目地址，否则是补丁包地址
+                self.prj_folder.set_text(&text);
+            } else if  file_path.is_dir(){
+                self.deploy_folder.set_text(&text);
+            } else {
+                nwg::simple_message("提示", "请拖拽目录");
+            }
+        } else {
+            nwg::simple_message("提示", "请拖拽一个目录");
+        }
+    }
     fn say_goodbye(&self) {
         // nwg::simple_message("Goodbye", "Goodbye ");
         nwg::stop_thread_dispatch();
@@ -109,8 +126,9 @@ impl BasicApp {
         }
     }
     fn refresh(&self) {
-        if self.prj_folder.text() == "请选择工程目录" {
-            nwg::simple_message("提示", "请选择工程目录");
+        let prj_folder = self.prj_folder.text();
+        if !Path::new(&(prj_folder+"\\target")).is_dir() {
+            nwg::simple_message("提示", "请选择正确的工程目录");
             return;
         }
         let output = Command::new("git").creation_flags(0x08000000).current_dir(self.prj_folder.text()).args(["log","--pretty=oneline","-10"]).output().unwrap();
@@ -222,36 +240,37 @@ fn copy_file(to: &str, from:&str,file: &str){
     let mut from2 = from.to_string() +"\\"+ file;
     let d_file = transform_path(file.to_string());
     let tf = to.to_string()+"\\"+&d_file;
+    // 创建目录
+    let to_dir = Path::new(&tf).parent().unwrap();
+    let dir = to_dir.to_str().unwrap();
+    fs::create_dir_all(dir).unwrap();
     if file.starts_with(JAVA) {
         from2 = (from.to_string() +"\\"+ &d_file).replace(WEBINF, TARGET);
-    }
-    // 创建目录
-    fs::create_dir_all(Path::new(&tf).parent().unwrap().to_str().unwrap()).unwrap();
-    // println!("拷贝从{}到{}",from2,tf);
-    fs::copy(&from2, &tf).unwrap();
-    // TODO 判断如果是java 文件需要 拷贝内部类
-    if file.ends_with(".class") {
+        // 判断如果是java 文件需要 拷贝内部类
         let cfp = Path::new(&from2);
         let name = cfp.file_name().unwrap().to_str().unwrap();
         let parent = cfp.parent().unwrap();
-        if !parent.is_dir() || !parent.exists() {
+        if !parent.is_dir(){
             return;
         }
         let class_files = parent.read_dir().unwrap();
+        let name_no_ext = name.split(".").collect::<Vec<&str>>()[0];
         for class_file in class_files {
             if let Ok(entry) = class_file {
                 let p = entry.path();
-                let name2 = p.file_name().unwrap().to_str().unwrap();
-                let ext = p.extension().unwrap();
-                if ext == "class" && name2.starts_with(name) {
-                    let tf2 = tf.replace(name,name2);
-                    // println!("拷贝 从{},到{}",p.to_str().unwrap(),tf);
-                    fs::copy(cfp.to_str().unwrap(),tf2).unwrap();
+                if p.is_file() {
+                    let name2 = p.file_name().unwrap().to_str().unwrap();
+                    if name2.ends_with(".class") && name2.starts_with(name_no_ext) && name2.len() > name.len() {
+                        let tf2 = dir.to_string()+"\\"+name2;
+                        println!("拷贝从{}到{}",p.to_str().unwrap(),tf2);
+                        fs::copy(p.to_str().unwrap(),&tf2).unwrap();
+                    }
                 }
             }
         }
-
     }
+    println!("拷贝从{}到{}",from2,tf);
+    fs::copy(&from2, &tf).unwrap();
 
 }
 // 删除文件
@@ -260,32 +279,38 @@ fn del_file(dir: &str,file: &str) {
     let path = Path::new(&file_path);
     if path.is_file() {
         fs::remove_file(path).unwrap();
-        // println!("删除文件:{}",path.to_str().unwrap());
-    } else if path.is_dir() {
-        fs::remove_dir_all(path).unwrap();
-        // println!("删除目录:{}",path.to_str().unwrap());
-    }
-    // TODO 判断如果是java 文件需要 删除内部类
-    if path.extension().unwrap() == "class" {
-        let name = path.file_name().unwrap().to_str().unwrap();
-        let parent = path.parent().unwrap();
-        if !parent.is_dir() || !parent.exists() {
-            return;
-        }
-        let class_files = parent.read_dir().unwrap();
-        for class_file in class_files {
-            let p = class_file.unwrap().path();
-            if p.extension().unwrap() == "class" && p.file_name().unwrap().to_str().unwrap().starts_with(name) {
-                fs::remove_file(p).unwrap();
-                // println!("删除内部类文件:{}",p.to_str().unwrap());
+        println!("删除文件:{}",path.to_str().unwrap());
+        // 判断如果是java 文件需要 删除内部类
+        let ext = path.extension().unwrap().to_str().unwrap();
+        if "class".eq_ignore_ascii_case(ext) {
+            let name = path.file_name().unwrap().to_str().unwrap();
+            let name_no_ext = name.split(".").collect::<Vec<&str>>()[0];
+            let parent = path.parent().unwrap();
+            if !parent.is_dir() {
+                println!("{}目录不存在，跳过删除",parent.to_str().unwrap());
+                return;
+            }
+            let class_files = parent.read_dir().unwrap();
+            for class_file in class_files {
+                let p = class_file.unwrap().path();
+                if p.is_file() {
+                    let name2 = p.file_name().unwrap().to_str().unwrap();
+                    if name2.ends_with(".class")  && name2.starts_with(name_no_ext) {
+                        println!("删除内部类文件:{}",p.to_str().unwrap());
+                        fs::remove_file(p).unwrap();
+                    }
+                }
             }
         }
+    } else if path.is_dir() {
+        fs::remove_dir_all(path).unwrap();
+        println!("删除目录:{}",path.to_str().unwrap());
     }
 }
 
 fn main() {
     nwg::init().expect("Failed to init Native Windows GUI");
-
+    nwg::Font::set_global_family("Microsoft YaHei UI Bold").expect("设置全局字体出错！");
     let _app = BasicApp::build_ui(Default::default()).expect("Failed to build UI");
 
     nwg::dispatch_thread_events();
