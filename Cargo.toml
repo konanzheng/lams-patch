@@ -1,5 +1,5 @@
 [package]
-name = "nwg-demo"
+name = "lams-patch"
 version = "0.1.0"
 edition = "2018"
 build = "build.rs"
@@ -17,5 +17,5 @@ native-windows-derive = "1.0.3"
 
 
 [package.metadata.winres]
-OriginalFilename = "nwg-demo.exe"
-LegalCopyright = "Copyright © 2022-2023 nwg-demo ruizhao"
+OriginalFilename = "lams-patch.exe"
+LegalCopyright = "Copyright © 2022-2023 zhengruizhao"

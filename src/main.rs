@@ -25,10 +25,12 @@ use std::path::*;
 
 #[derive(Default, NwgUi)]
 pub struct BasicApp {
-    #[nwg_resource(source_file: Some("./patch.ico"))]
-    icon: nwg::Icon,
+    
+    // #[nwg_resource(source_system: Some(OemBitmap::ZoomD  ))]
+    // #[nwg_resource(source_file: Some("./patch.ico"))]
+    // icon: nwg::Icon,
 
-    #[nwg_control(icon: Some(&data.icon),size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE", accept_files: true)]
+    #[nwg_control(size: (600, 600), position: (300, 300), title: "LAMS补丁工具", flags: "WINDOW|VISIBLE", accept_files: true)]
     #[nwg_events( OnWindowClose: [BasicApp::say_goodbye] , OnFileDrop: [BasicApp::load_text(SELF, EVT_DATA)])]
     window: nwg::Window,
 
