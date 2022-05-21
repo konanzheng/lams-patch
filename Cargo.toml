@@ -3,7 +3,12 @@ name = "lams-patch"
 version = "0.1.0"
 edition = "2018"
 build = "build.rs"
-
+authors = ["郑瑞召 <ruizhaozheng@aliyun.com>"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/konanzheng/lams-patch"
+repository = "https://github.com/konanzheng/lams-patch"
+documentation = "README.md"
+description = "a big text file split util"
 [build-dependencies]
 winres = "0.1"
 

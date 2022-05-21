@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'nwg-demo'",
+            "name": "Debug executable 'lams-patch'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=nwg-demo",
-                    "--package=nwg-demo"
+                    "--bin=lams-patch",
+                    "--package=lams-patch"
                 ],
                 "filter": {
-                    "name": "nwg-demo",
+                    "name": "lams-patch",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'nwg-demo'",
+            "name": "Debug unit tests in executable 'lams-patch'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=nwg-demo",
-                    "--package=nwg-demo"
+                    "--bin=lams-patch",
+                    "--package=lams-patch"
                 ],
                 "filter": {
-                    "name": "nwg-demo",
+                    "name": "lams-patch",
                     "kind": "bin"
                 }
             },

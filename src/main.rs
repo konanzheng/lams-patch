@@ -10,7 +10,7 @@
     A very simple application that show your name in a message box.
     See `basic` for the version without the derive macro
 */
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 #[warn(unused_imports)]
 extern crate native_windows_derive as nwd;
 extern crate native_windows_gui as nwg;
@@ -22,7 +22,7 @@ use std::process::{Command, Stdio};
 use std::os::windows::process::CommandExt;
 use std::fs;
 use std::path::*;
-
+use std::env;
 #[derive(Default, NwgUi)]
 pub struct BasicApp {
     
@@ -185,6 +185,7 @@ impl BasicApp {
             nwg::simple_message("发布目录不能为空", "请选择发布目录");
         }
         // 2. 利用git 命令生成 差异信息
+        println!("命令行参数：{} {} {} {},",self.prj_folder.text(), self.deploy_folder.text(),old_id_str, new_id_str);
         let output = Command::new("git").creation_flags(0x08000000).args(["diff","--name-status",&old_id_str[..6],&new_id_str[..6]]).current_dir(self.prj_folder.text()).output().unwrap();
         let out = String::from_utf8(output.stdout).unwrap();
         // println!("{}", out);
@@ -309,11 +310,53 @@ fn del_file(dir: &str,file: &str) {
         println!("删除目录:{}",path.to_str().unwrap());
     }
 }
+fn make_patch(prj_folder_path:&str,deploy_path: &str,old_commmit_id:&str ,new_commmit_id:&str) {
+     // 2. 利用git 命令生成 差异信息
+     let output = Command::new("git").creation_flags(0x08000000).args(["diff","--name-status",old_commmit_id,new_commmit_id]).current_dir(prj_folder_path).output().unwrap();
+     let out = String::from_utf8(output.stdout).unwrap();
+     // println!("{}", out);
+     let mut del_vec :Vec<&str>= Vec::new();
+     let mut copy_vec :Vec<&str>= Vec::new();
+     for line in out.lines(){
+         let split:Vec<&str> = line.split("\t").collect();
+         let flag = split[0].to_string();
+         let path = split[1];
+         if !path.to_string().starts_with("src"){
+             continue;
+         }
+         if flag.starts_with("D") || flag.starts_with("R") {
+             del_vec.push(path);
+         }
+         if flag.starts_with("R") || flag.starts_with("A") ||flag.starts_with("M") {
+             copy_vec.push(split[split.len()-1]);
+         }
+     }
+     // TODO 目前实现的很不优雅，后续要处理异常，完善提醒
+     for del in del_vec{
+         del_file(&deploy_path,del);
+     }
+
+     for copy in copy_vec{
+         copy_file(&deploy_path,&prj_folder_path,copy);
+     }
+}
 
 fn main() {
-    nwg::init().expect("Failed to init Native Windows GUI");
-    nwg::Font::set_global_family("Microsoft YaHei UI Bold").expect("设置全局字体出错！");
-    let _app = BasicApp::build_ui(Default::default()).expect("Failed to build UI");
-
-    nwg::dispatch_thread_events();
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 3 {
+        let prj_folder_path = &args[1];
+        let deploy_path = &args[2];
+        let old_commmit_id = &args[3];
+        let mut new_commmit_id = "";
+        if args.len() > 4 {
+            new_commmit_id = &args[4];
+        }
+        make_patch(prj_folder_path,deploy_path,old_commmit_id,new_commmit_id);
+    } else {
+        nwg::init().expect("Failed to init Native Windows GUI");
+        nwg::Font::set_global_family("Microsoft YaHei UI Bold").expect("设置全局字体出错！");
+        let _app = BasicApp::build_ui(Default::default()).expect("Failed to build UI");
+    
+        nwg::dispatch_thread_events();
+    }
 }
