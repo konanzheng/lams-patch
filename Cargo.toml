@@ -6,8 +6,8 @@ authors = ["郑瑞召 <ruizhaozheng@aliyun.com>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/konanzheng/lams-patch"
 repository = "https://github.com/konanzheng/lams-patch"
-documentation = "README.md"
-description = "a big text file split util"
+documentation = "https://github.com/konanzheng/lams-patch"
+description = "make patch for maven project "
 
  
 
