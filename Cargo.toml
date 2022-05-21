@@ -9,16 +9,9 @@ homepage = "https://github.com/konanzheng/lams-patch"
 repository = "https://github.com/konanzheng/lams-patch"
 documentation = "README.md"
 description = "a big text file split util"
-[build-dependencies]
-winres = "0.1"
+
+ 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-
-
-
-[package.metadata.winres]
-OriginalFilename = "lams-patch.exe"
-LegalCopyright = "Copyright © 2022-2023 zhengruizhao"
